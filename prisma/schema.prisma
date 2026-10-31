@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  APPRAISER
+}
+
+enum VehicleStatus {
+  IN_RECON
+  FRONTLINE
+  WHOLESALE
+  PENDING
+  SOLD
+}
+
+enum ReconStage {
+  INTAKE
+  MECHANICAL
+  BODY
+  DETAIL
+  PHOTOS
+  READY
+}
+
+enum AppraisalStatus {
+  DRAFT
+  OFFERED
+  ACCEPTED
+  DECLINED
+  STOCKED
+}
+
+enum VehicleCondition {
+  EXCELLENT
+  CLEAN
+  AVERAGE
+  ROUGH
+}
+
+model Organization {
+  id                       String    @id @default(cuid())
+  name                     String
+  slug                     String    @unique
+  demoMode                 Boolean   @default(true)
+  carsxeKeyCipher          String?
+  carsxeKeyLast4           String?
+  carsxeConnectedAt        DateTime?
+  carsxeAuthMethod         String?
+  carsxeAccessTokenCipher  String?
+  carsxeRefreshTokenCipher String?
+  carsxeTokenExpiresAt     DateTime?
+  cacheTtlHours            Int       @default(24)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  users                    User[]
+  rooftops                 Rooftop[]
+  vehicles                 Vehicle[]
+  appraisals               Appraisal[]
+  apiCache                 ApiCache[]
+  apiUsage                 ApiUsage[]
+}
+
+model Rooftop {
+  id                 String   @id @default(cuid())
+  organizationId     String
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name               String
+  city               String
+  state              String
+  zip                String?
+  agingThresholdDays Int      @default(45)
+  targetTurnDays     Int      @default(45)
+  createdAt          DateTime @default(now())
+  users              User[]
+  vehicles           Vehicle[]
+  appraisals         Appraisal[]
+
+  @@index([organizationId])
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rooftopId      String?
+  rooftop        Rooftop? @relation(fields: [rooftopId], references: [id], onDelete: SetNull)
+  email          String   @unique
+  name           String
+  passwordHash   String
+  role           Role     @default(APPRAISER)
+  createdAt      DateTime @default(now())
+  appraisals     Appraisal[]
+  apiUsage       ApiUsage[]
+
+  @@index([organizationId])
+}
+
+model Vehicle {
+  id                   String        @id @default(cuid())
+  organizationId       String
+  organization         Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rooftopId            String
+  rooftop              Rooftop       @relation(fields: [rooftopId], references: [id], onDelete: Restrict)
+  vin                  String
+  stockNumber          String
+  year                 Int
+  make                 String
+  model                String
+  trim                 String?
+  bodyStyle            String?
+  color                String?
+  mileage              Int
+  costCents            Int
+  listPriceCents       Int
+  marketRetailCents    Int?
+  marketWholesaleCents Int?
+  marketTradeInCents   Int?
+  marketFetchedAt      DateTime?
+  status               VehicleStatus @default(IN_RECON)
+  reconStage           ReconStage    @default(INTAKE)
+  acquiredAt           DateTime
+  soldAt               DateTime?
+  notes                String?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@unique([organizationId, vin])
+  @@unique([organizationId, stockNumber])
+  @@index([organizationId, status])
+  @@index([rooftopId])
+}
+
+model Appraisal {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rooftopId            String
+  rooftop              Rooftop           @relation(fields: [rooftopId], references: [id], onDelete: Restrict)
+  appraiserId          String
+  appraiser            User              @relation(fields: [appraiserId], references: [id], onDelete: Restrict)
+  vin                  String
+  plate                String?
+  plateState           String?
+  year                 Int?
+  make                 String?
+  model                String?
+  trim                 String?
+  mileage              Int
+  condition            VehicleCondition  @default(CLEAN)
+  customerName         String?
+  offerCents           Int?
+  status               AppraisalStatus   @default(DRAFT)
+  notes                String?
+  marketRetailCents    Int?
+  marketWholesaleCents Int?
+  marketTradeInCents   Int?
+  marketAuctionCents   Int?
+  brandCount           Int               @default(0)
+  recallCount          Int               @default(0)
+  hasOpenLien          Boolean           @default(false)
+  hasTheftFlag         Boolean           @default(false)
+  historySummary       String?
+  payload              Json?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([rooftopId])
+}
+
+model ApiCache {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  endpoint       String
+  cacheKey       String
+  payload        Json
+  fetchedAt      DateTime     @default(now())
+  expiresAt      DateTime
+
+  @@unique([organizationId, endpoint, cacheKey])
+  @@index([expiresAt])
+}
+
+model ApiUsage {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  endpoint       String
+  action         String
+  vin            String?
+  billed         Boolean
+  cacheHit       Boolean
+  demo           Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}

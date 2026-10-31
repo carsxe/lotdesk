@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: lotdesk
+      POSTGRES_PASSWORD: lotdesk
+      POSTGRES_DB: lotdesk
+    volumes:
+      - lotdesk_pg:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lotdesk -d lotdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "43173:43173"
+    environment:
+      DATABASE_URL: postgresql://lotdesk:lotdesk@db:5432/lotdesk
+      AUTH_SECRET: local-docker-auth-secret-change-me
+      AUTH_URL: http://127.0.0.1:43173
+      APP_URL: http://127.0.0.1:43173
+      ENCRYPTION_KEY: 0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff
+      CARSXE_API_BASE_URL: https://api.carsxe.com
+      CARSXE_OAUTH_AUTHORIZE_URL: ${CARSXE_OAUTH_AUTHORIZE_URL:-}
+      CARSXE_OAUTH_TOKEN_URL: ${CARSXE_OAUTH_TOKEN_URL:-}
+      CARSXE_OAUTH_CLIENT_ID: ${CARSXE_OAUTH_CLIENT_ID:-}
+      CARSXE_OAUTH_CLIENT_SECRET: ${CARSXE_OAUTH_CLIENT_SECRET:-}
+      CARSXE_OAUTH_SCOPES: ${CARSXE_OAUTH_SCOPES:-vehicle:read}
+      CARSXE_OAUTH_REDIRECT_URI: ${CARSXE_OAUTH_REDIRECT_URI:-http://127.0.0.1:43173/api/oauth/callback}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  lotdesk_pg:
