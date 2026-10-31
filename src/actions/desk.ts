@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { dollarsToCents } from "@/lib/money";
+import { guideAppraisal } from "@/lib/appraisal-guidance";
 import { suggestedOfferCents } from "@/lib/pricing";
 import { normalizeVin } from "@/lib/vin";
 import { lookupDesk } from "@/server/carsxe";
@@ -95,10 +96,21 @@ export async function saveAppraisalAction(_prev: { error?: string } | null, form
     return { error: "Missing required appraisal fields." };
   }
 
-  const offerCents = parsed.data.offer ? dollarsToCents(parsed.data.offer) : suggestedOfferCents({
-    marketTradeInCents: parsed.data.marketTradeInCents,
+  const guide = guideAppraisal({
+    marketRetailCents: parsed.data.marketRetailCents,
     marketWholesaleCents: parsed.data.marketWholesaleCents,
+    marketTradeInCents: parsed.data.marketTradeInCents,
+    titleBrands: parsed.data.brandCount,
+    hasOpenLien: parsed.data.hasOpenLien === "true",
+    hasTheftFlag: parsed.data.hasTheftFlag === "true",
   });
+  const offerCents = parsed.data.offer
+    ? dollarsToCents(parsed.data.offer)
+    : guide.offerCents ??
+      suggestedOfferCents({
+        marketTradeInCents: parsed.data.marketTradeInCents,
+        marketWholesaleCents: parsed.data.marketWholesaleCents,
+      });
 
   const appraisal = await prisma.appraisal.create({
     data: {
@@ -127,6 +139,8 @@ export async function saveAppraisalAction(_prev: { error?: string } | null, form
       hasOpenLien: parsed.data.hasOpenLien === "true",
       hasTheftFlag: parsed.data.hasTheftFlag === "true",
       historySummary: parsed.data.historySummary,
+      walkAwayCents: guide.walkAwayCents,
+      counterCents: guide.counterCents,
       payload: parsed.data.payload ? JSON.parse(parsed.data.payload) : undefined,
     },
   });

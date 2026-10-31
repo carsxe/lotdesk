@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { parseInventoryCsv } from "@/lib/csv";
 import { dollarsToCents } from "@/lib/money";
 import { normalizeVin } from "@/lib/vin";
+import { classifySegment } from "@/lib/stocking";
 import { lookupDesk } from "@/server/carsxe";
 import { getOrganization, requireRole, requireUser } from "@/server/session";
 import type { ReconStage, VehicleStatus } from "@prisma/client";
@@ -71,6 +72,9 @@ export async function createVehicleAction(_prev: { error?: string } | null, form
       reconStage: "INTAKE",
       acquiredAt: new Date(),
       notes: parsed.data.notes,
+      segment: classifySegment(lookup.summary.bodyStyle, lookup.summary.model),
+      kind: "USED",
+      stageEnteredAt: new Date(),
     },
   });
 
@@ -109,6 +113,7 @@ export async function applySuggestedPrice(id: string, listPriceCents: number) {
   });
   revalidatePath("/app/pricing");
   revalidatePath("/app/inventory");
+  revalidatePath("/app/turn-score");
 }
 
 export async function refreshVehicleMarket(id: string) {

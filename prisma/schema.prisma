@@ -45,6 +45,44 @@ enum VehicleCondition {
   ROUGH
 }
 
+enum InventoryKind {
+  USED
+  NEW
+}
+
+enum ReconLineStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum PhotoKind {
+  RAW
+  CUTOUT
+  PROMO
+  SPIN
+}
+
+enum IncentiveKind {
+  REBATE
+  BONUS
+  APR
+}
+
+enum SyndicationStatus {
+  DRAFT
+  QUEUED
+  LIVE
+  ERROR
+  PAUSED
+}
+
+enum InspectionSeverity {
+  NOTE
+  MINOR
+  MAJOR
+}
+
 model Organization {
   id                       String    @id @default(cuid())
   name                     String
@@ -66,6 +104,14 @@ model Organization {
   appraisals               Appraisal[]
   apiCache                 ApiCache[]
   apiUsage                 ApiUsage[]
+  incentives               IncentiveProgram[]
+  sourcingCandidates       SourcingCandidate[]
+  reconLines               ReconLine[]
+  photos                   Photo[]
+  inspections              Inspection[]
+  syndicationChannels      SyndicationChannel[]
+  featureFlags             FeatureFlag[]
+  betaFeedback             BetaFeedback[]
 }
 
 model Rooftop {
@@ -76,12 +122,14 @@ model Rooftop {
   city               String
   state              String
   zip                String?
-  agingThresholdDays Int      @default(45)
-  targetTurnDays     Int      @default(45)
-  createdAt          DateTime @default(now())
-  users              User[]
-  vehicles           Vehicle[]
-  appraisals         Appraisal[]
+  agingThresholdDays     Int      @default(45)
+  targetTurnDays         Int      @default(45)
+  holdingCostPerDayCents Int      @default(3500)
+  targetUnitsPerModel    Int      @default(2)
+  createdAt              DateTime @default(now())
+  users                  User[]
+  vehicles               Vehicle[]
+  appraisals             Appraisal[]
 
   @@index([organizationId])
 }
@@ -99,6 +147,8 @@ model User {
   createdAt      DateTime @default(now())
   appraisals     Appraisal[]
   apiUsage       ApiUsage[]
+  reconApprovals ReconLine[] @relation("ReconApprover")
+  betaFeedback   BetaFeedback[]
 
   @@index([organizationId])
 }
@@ -128,13 +178,30 @@ model Vehicle {
   reconStage           ReconStage    @default(INTAKE)
   acquiredAt           DateTime
   soldAt               DateTime?
-  notes                String?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  notes                  String?
+  kind                   InventoryKind @default(USED)
+  segment                String?
+  reconSpendCents        Int           @default(0)
+  holdingCostPerDayCents Int           @default(3500)
+  msrpCents              Int?
+  invoiceCents           Int?
+  description            String?
+  aiDescription          String?
+  photoPackReady         Boolean       @default(false)
+  certified              Boolean       @default(false)
+  stageEnteredAt         DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  reconLines             ReconLine[]
+  photos                 Photo[]
+  spinFrames             SpinFrame[]
+  inspections            Inspection[]
+  syndicationListings    SyndicationListing[]
 
   @@unique([organizationId, vin])
   @@unique([organizationId, stockNumber])
   @@index([organizationId, status])
+  @@index([organizationId, kind])
   @@index([rooftopId])
 }
 
@@ -169,8 +236,11 @@ model Appraisal {
   hasTheftFlag         Boolean           @default(false)
   historySummary       String?
   payload              Json?
+  walkAwayCents        Int?
+  counterCents         Int?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
+  inspections          Inspection[]
 
   @@index([organizationId, createdAt])
   @@index([rooftopId])
@@ -205,4 +275,167 @@ model ApiUsage {
   createdAt      DateTime     @default(now())
 
   @@index([organizationId, createdAt])
+}
+
+model IncentiveProgram {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  make           String
+  model          String?
+  year           Int?
+  amountCents    Int
+  kind           IncentiveKind @default(REBATE)
+  source         String        @default("MANUAL")
+  startsAt       DateTime?
+  endsAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, make])
+}
+
+model SourcingCandidate {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vin            String
+  year           Int
+  make           String
+  model          String
+  trim           String?
+  segment        String?
+  mileage        Int
+  askingCents    Int
+  sourceName     String
+  adapter        String
+  payload        Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+model ReconLine {
+  id             String          @id @default(cuid())
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  title          String
+  category       String
+  estimateCents  Int
+  status         ReconLineStatus @default(PENDING)
+  vendor         String?
+  stage          ReconStage      @default(MECHANICAL)
+  notes          String?
+  approvedById   String?
+  approvedBy     User?           @relation("ReconApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+  decidedAt      DateTime?
+
+  @@index([organizationId, status])
+  @@index([vehicleId])
+}
+
+model Photo {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicleId      String
+  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  kind           PhotoKind    @default(RAW)
+  url            String
+  overlay        String?
+  createdAt      DateTime     @default(now())
+
+  @@index([vehicleId])
+}
+
+model SpinFrame {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  index     Int
+  url       String
+
+  @@unique([vehicleId, index])
+}
+
+model Inspection {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appraisalId    String?
+  appraisal      Appraisal?   @relation(fields: [appraisalId], references: [id], onDelete: Cascade)
+  vehicleId      String?
+  vehicle        Vehicle?     @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  grade          String
+  provider       String       @default("manual")
+  imageUrl       String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  tags           InspectionTag[]
+
+  @@index([organizationId])
+}
+
+model InspectionTag {
+  id           String              @id @default(cuid())
+  inspectionId String
+  inspection   Inspection          @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  x            Float
+  y            Float
+  label        String
+  severity     InspectionSeverity  @default(MINOR)
+  notes        String?
+}
+
+model SyndicationChannel {
+  id             String               @id @default(cuid())
+  organizationId String
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  slug           String
+  adapter        String               @default("lotdesk-feed")
+  format         String               @default("json")
+  enabled        Boolean              @default(true)
+  listings       SyndicationListing[]
+
+  @@unique([organizationId, slug])
+}
+
+model SyndicationListing {
+  id         String             @id @default(cuid())
+  vehicleId  String
+  vehicle    Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  channelId  String
+  channel    SyndicationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  status     SyndicationStatus  @default(DRAFT)
+  lastSyncAt DateTime?
+  error      String?
+
+  @@unique([vehicleId, channelId])
+}
+
+model FeatureFlag {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  key            String
+  enabled        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@unique([organizationId, key])
+}
+
+model BetaFeedback {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flagKey        String
+  rating         Int
+  comment        String?
+  createdAt      DateTime     @default(now())
 }

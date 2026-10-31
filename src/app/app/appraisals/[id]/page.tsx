@@ -46,6 +46,8 @@ export default async function AppraisalDetailPage({
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p className="text-2xl font-semibold">{formatMoney(appraisal.offerCents)}</p>
+            <p>Walk-away: {formatMoney(appraisal.walkAwayCents)}</p>
+            <p>Counter: {formatMoney(appraisal.counterCents)}</p>
             <p>Customer: {appraisal.customerName ?? "—"}</p>
             <p>Mileage: {appraisal.mileage.toLocaleString()}</p>
             <p>Condition: {appraisal.condition.toLowerCase()}</p>

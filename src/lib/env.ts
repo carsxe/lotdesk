@@ -56,3 +56,15 @@ export function getCarsxeOauthConfig(): OauthConfig | null {
 export function isOauthConfigured(): boolean {
   return getCarsxeOauthConfig() !== null;
 }
+
+export function getProviderKind(name: "AI" | "IMAGE" | "INSPECTION" | "INCENTIVE" | "SOURCE" | "SYNDICATION"): string {
+  const map = {
+    AI: process.env.AI_PROVIDER,
+    IMAGE: process.env.IMAGE_PROVIDER,
+    INSPECTION: process.env.INSPECTION_PROVIDER,
+    INCENTIVE: process.env.INCENTIVE_ADAPTER,
+    SOURCE: process.env.SOURCE_ADAPTER,
+    SYNDICATION: process.env.SYNDICATION_ADAPTER,
+  };
+  return map[name] || "demo";
+}

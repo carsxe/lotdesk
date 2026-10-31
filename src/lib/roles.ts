@@ -20,6 +20,14 @@ export function canCreateAppraisal(role: Role): boolean {
   return role === "OWNER" || role === "MANAGER" || role === "APPRAISER";
 }
 
+export function canApproveRecon(role: Role): boolean {
+  return role === "OWNER" || role === "MANAGER";
+}
+
+export function canManageLab(role: Role): boolean {
+  return role === "OWNER" || role === "MANAGER";
+}
+
 export function roleLabel(role: Role): string {
   switch (role) {
     case "OWNER":

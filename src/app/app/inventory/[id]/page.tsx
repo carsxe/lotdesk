@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { getFixtureVin } from "@/lib/carsxe/fixtures";
 import { formatMoney, formatNumber } from "@/lib/money";
 import { analyzePrice } from "@/lib/pricing";
+import { scoreOwnedVehicle } from "@/lib/turn-score";
+import { TurnScoreBadge } from "@/components/turn-score-badge";
 import { prisma } from "@/lib/prisma";
 import { getOrganization, requireUser } from "@/server/session";
 import { notFound } from "next/navigation";
@@ -33,6 +35,16 @@ export default async function VehicleDetailPage({
     acquiredAt: vehicle.acquiredAt,
     agingThresholdDays: vehicle.rooftop.agingThresholdDays,
   });
+  const turn = scoreOwnedVehicle({
+    marketRetailCents: vehicle.marketRetailCents,
+    marketWholesaleCents: vehicle.marketWholesaleCents,
+    costCents: vehicle.costCents,
+    listPriceCents: vehicle.listPriceCents,
+    acquiredAt: vehicle.acquiredAt,
+    holdingCostPerDayCents: vehicle.holdingCostPerDayCents || vehicle.rooftop.holdingCostPerDayCents,
+    reconSpendCents: vehicle.reconSpendCents,
+    targetTurnDays: vehicle.rooftop.targetTurnDays,
+  });
   const fixture = getFixtureVin(vehicle.vin);
   const image = fixture?.images.images[0]?.link;
 
@@ -50,6 +62,7 @@ export default async function VehicleDetailPage({
           <VehicleStatusBadge status={vehicle.status} />
           <ReconBadge stage={vehicle.reconStage} />
           <PriceFlagBadge flag={analysis.flag} aging={analysis.aging} />
+          <TurnScoreBadge score={turn.score} recommendation={turn.recommendation} label={turn.label} />
         </div>
       </div>
 

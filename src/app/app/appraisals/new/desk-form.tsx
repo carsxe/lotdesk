@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { guideAppraisal } from "@/lib/appraisal-guidance";
 import { formatMoney } from "@/lib/money";
 import { extractRecalls } from "@/lib/carsxe/types";
 import type { DeskLookup } from "@/server/carsxe";
@@ -167,6 +168,35 @@ export function DeskForm({
               </CardContent>
             </Card>
           </div>
+          {(() => {
+            const guide = guideAppraisal({
+              marketRetailCents: desk.summary.retailCents,
+              marketWholesaleCents: desk.summary.wholesaleCents,
+              marketTradeInCents: desk.summary.tradeInCents,
+              titleBrands: desk.summary.brandCount,
+              hasOpenLien: desk.summary.hasOpenLien,
+              hasTheftFlag: desk.summary.hasTheftFlag,
+            });
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Counter-offer desk</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-4 text-sm">
+                  <Value label="Offer range" value={`${formatMoney(guide.offerLowCents)} – ${formatMoney(guide.offerHighCents)}`} />
+                  <Value label="Suggested offer" value={formatMoney(guide.offerCents)} />
+                  <Value label="Counter" value={formatMoney(guide.counterCents)} />
+                  <Value label="Walk-away" value={formatMoney(guide.walkAwayCents)} />
+                  <div className="sm:col-span-4 rounded-md border px-3 py-2">
+                    <p className="font-medium">
+                      Turn Score {guide.turn.score} · {guide.turn.label}
+                    </p>
+                    <p className="text-muted-foreground">{guide.turn.rationale[0]}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
           {desk.images.images[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
