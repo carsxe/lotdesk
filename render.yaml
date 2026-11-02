@@ -39,4 +39,4 @@ databases:
   - name: lotdesk-db
     databaseName: lotdesk
     user: lotdesk_user
-    plan: starter
+    plan: 0.1c-256mb
