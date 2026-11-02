@@ -139,6 +139,13 @@ The usage page and the desk ribbon show billed vs. cache vs. demo.
 - **Managed:** deploy this repo as a multi-tenant service. Each dealership signs up, connects CarsXE, and works their lot.
 - **Self-hosted:** `docker compose up`. Bring your own Postgres credentials and `ENCRYPTION_KEY` / `AUTH_SECRET`.
 
+### One-Click Cloud Deployment
+
+These buttons only work once the repository is public.
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new/template?template=https%3A%2F%2Fgithub.com%2Fcarsxe%2Flotdesk)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https%3A%2F%2Fgithub.com%2Fcarsxe%2Flotdesk)
+
 ## Architecture
 
 ```

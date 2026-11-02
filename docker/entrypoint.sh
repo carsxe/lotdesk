@@ -10,6 +10,9 @@ until node -e "const {PrismaClient}=require('@prisma/client'); const p=new Prism
   fi
   sleep 2
 done
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
 npx prisma migrate deploy
 npx prisma db seed
 exec npx next start -p "${PORT:-43173}" -H 0.0.0.0

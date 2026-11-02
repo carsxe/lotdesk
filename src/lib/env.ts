@@ -17,6 +17,7 @@ export function getAuthSecret(): string {
 export function getAppUrl(): string {
   return (
     process.env.APP_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
     process.env.AUTH_URL ??
     process.env.NEXTAUTH_URL ??
     "http://127.0.0.1:43173"
