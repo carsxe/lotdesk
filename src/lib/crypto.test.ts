@@ -9,6 +9,13 @@ describe("crypto", () => {
     expect(decryptSecret(cipher, secret)).toBe("carsxe-test-key");
   });
 
+  it("derives a 32-byte AES key from a Render generateValue-style secret", () => {
+    const generated = Buffer.alloc(32, 7).toString("base64");
+    expect(generated).not.toMatch(/^[0-9a-fA-F]{64}$/);
+    const cipher = encryptSecret("carsxe-test-key", generated);
+    expect(decryptSecret(cipher, generated)).toBe("carsxe-test-key");
+  });
+
   it("builds a stable cache key", () => {
     const a = cacheKeyFor({ vin: "WBAFR7C57CC811956", mileage: 1000 });
     const b = cacheKeyFor({ mileage: 1000, vin: "wbafr7c57cc811956" });

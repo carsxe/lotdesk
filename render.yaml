@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: lotdesk
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    preDeployCommand: npx prisma migrate deploy
+    dockerCommand: /bin/sh -c "npx prisma migrate deploy && npm run start"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: lotdesk-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: CARSXE_OAUTH_AUTHORIZE_URL
+        sync: false
+      - key: CARSXE_OAUTH_TOKEN_URL
+        sync: false
+      - key: CARSXE_OAUTH_CLIENT_ID
+        sync: false
+      - key: CARSXE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: CARSXE_OAUTH_SCOPES
+        sync: false
+      - key: CARSXE_OAUTH_REDIRECT_URI
+        sync: false
+
+databases:
+  - name: lotdesk-db
+    databaseName: lotdesk
+    user: lotdesk_user
+    plan: 0.1c-256mb
