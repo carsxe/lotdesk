@@ -66,9 +66,9 @@ docker compose up --build
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-Demo login: `demo@lotdesk.dev` / `lotdesk-demo`
+`docker-compose.yml` sets `SEED_DEMO_DATA=true` so the image entrypoint loads demo users and inventory. Demo login: `demo@lotdesk.dev` / `lotdesk-demo`
 
-Also: `manager@lotdesk.dev` and `appraiser@lotdesk.dev` with the same password.
+Also: `manager@lotdesk.dev` and `appraiser@lotdesk.dev` with the same password. Do not set `SEED_DEMO_DATA` on a public host.
 
 ## Quickstart (local)
 
@@ -137,7 +137,7 @@ The usage page and the desk ribbon show billed vs. cache vs. demo.
 ## Hosted vs self-hosted
 
 - **Managed:** deploy this repo as a multi-tenant service. Each dealership signs up, connects CarsXE, and works their lot.
-- **Self-hosted:** `docker compose up`. Bring your own Postgres credentials and `ENCRYPTION_KEY` / `AUTH_SECRET`.
+- **Self-hosted:** `docker compose up`. Bring your own Postgres credentials and `ENCRYPTION_KEY` / `AUTH_SECRET`. Compose sets `SEED_DEMO_DATA=true` so the known demo logins exist locally. Railway and Render do not set it, so those deploys start empty.
 
 ### One-Click Cloud Deployment
 

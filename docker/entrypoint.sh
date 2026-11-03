@@ -14,5 +14,7 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 npx prisma migrate deploy
-npx prisma db seed
+if [ "${SEED_DEMO_DATA:-}" = "true" ]; then
+  npx prisma db seed
+fi
 exec npx next start -p "${PORT:-43173}" -H 0.0.0.0

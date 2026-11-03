@@ -5,6 +5,7 @@ services:
     plan: starter
     healthCheckPath: /api/health
     preDeployCommand: npx prisma migrate deploy
+    dockerCommand: /bin/sh -c "npx prisma migrate deploy && npm run start"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
