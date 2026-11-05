@@ -6,6 +6,9 @@ import { classifySegment } from "../src/lib/stocking";
 
 const prisma = new PrismaClient();
 
+// 8 used fixtures + 3 new units. Feature flags and feedback are written last.
+const EXPECTED_DEMO_UNITS = 11;
+
 function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 86_400_000);
 }
@@ -19,7 +22,27 @@ function marketCents(vin: string) {
   };
 }
 
+async function alreadySeeded(): Promise<boolean> {
+  const org = await prisma.organization.findUnique({
+    where: { slug: "harbor-automotive" },
+    select: {
+      _count: { select: { vehicles: true, featureFlags: true, betaFeedback: true } },
+    },
+  });
+  return Boolean(
+    org &&
+      org._count.vehicles >= EXPECTED_DEMO_UNITS &&
+      org._count.featureFlags >= 4 &&
+      org._count.betaFeedback >= 1,
+  );
+}
+
 async function main() {
+  if (await alreadySeeded()) {
+    console.log("Demo data already present; skipping seed.");
+    return;
+  }
+
   const passwordHash = await hash("lotdesk-demo", 12);
 
   const org = await prisma.organization.upsert({

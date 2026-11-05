@@ -15,6 +15,8 @@ if [ "$#" -gt 0 ]; then
 fi
 npx prisma migrate deploy
 if [ "${SEED_DEMO_DATA:-}" = "true" ]; then
-  npx prisma db seed
+  if ! npx prisma db seed; then
+    echo "Demo seed failed; continuing so the app can still start."
+  fi
 fi
 exec npx next start -p "${PORT:-43173}" -H 0.0.0.0

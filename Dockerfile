@@ -22,6 +22,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
+# Demo seed (tsx prisma/seed.ts) imports these modules. Do not copy all of src/.
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/src/lib/carsxe/fixtures.ts /app/src/lib/carsxe/types.ts ./src/lib/carsxe/
+COPY --from=builder /app/src/lib/stocking.ts ./src/lib/stocking.ts
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 EXPOSE 43173
